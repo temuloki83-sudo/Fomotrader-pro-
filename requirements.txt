@@ -1,0 +1,13 @@
+python-telegram-bot==20.7
+flask==3.0.3
+asyncio
+logging
+random
+string
+time
+datetime
+mnemonic
+bip-utils==0.5.0
+solders==0.21.0
+solana==0.34.3
+base58==2.1.1
