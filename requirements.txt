@@ -1,5 +1,5 @@
-python-telegram-bot==21.5
+python-telegram-bot[job-queue]==21.5
 flask==3.0.3
-python-dotenv==1.0.1
 mnemonic==0.20
-bip-utils==2.9.0   # optional but you have it
+bip-utils==2.9.0
+base58==2.1.1
