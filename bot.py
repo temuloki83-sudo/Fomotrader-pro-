@@ -14,10 +14,9 @@ from telegram.ext import (
     filters,
     ContextTypes,
     ConversationHandler,
-    Dispatcher  # ← added for webhook
 )
 
-# Solana imports with fallback
+# Solana imports with fallback (unused but kept for compatibility)
 try:
     from solders.keypair import Keypair as SoldersKeypair
     from solders.pubkey import Pubkey
@@ -96,9 +95,9 @@ wallet_rotation_index = 0
 
 # Anti-double-tap
 last_callback_time = {}
-last_processed_callback_id = {}     # added for stricter dedup
-last_main_edit_time = {}            # added for menu spam protection
-CALLBACK_COOLDOWN_SECONDS = 2.2     # increased from 0.9
+last_processed_callback_id = {}
+last_main_edit_time = {}
+CALLBACK_COOLDOWN_SECONDS = 2.2
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -241,13 +240,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await query.answer()
             return MENU
 
-    # Stricter anti-spam: ignore if same callback data very recently
     if user_id in last_processed_callback_id:
         if data == last_processed_callback_id[user_id] and now - last_callback_time.get(user_id, 0) < 4.5:
             await query.answer("Action already in progress — please wait", show_alert=False)
             return MENU
 
-    # Also block if main menu was edited very recently
     if user_id in last_main_edit_time:
         if now - last_main_edit_time[user_id] < 2.8:
             await query.answer()
@@ -958,7 +955,7 @@ async def edit_or_send(update: Update, context: ContextTypes.DEFAULT_TYPE, text:
                 chat_id=chat_id, message_id=main_msg_id, text=text,
                 reply_markup=reply_markup, parse_mode="Markdown"
             )
-            last_main_edit_time[user_id] = time.time()  # added
+            last_main_edit_time[user_id] = time.time()
             return
         except:
             pass
@@ -967,7 +964,7 @@ async def edit_or_send(update: Update, context: ContextTypes.DEFAULT_TYPE, text:
         chat_id=chat_id, text=text, reply_markup=reply_markup, parse_mode="Markdown"
     )
     user_data[user_id]["main_msg_id"] = msg.message_id
-    last_main_edit_time[user_id] = time.time()  # added
+    last_main_edit_time[user_id] = time.time()
 
 async def show_settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -1246,9 +1243,7 @@ async def fake_trend_notifier(context: ContextTypes.DEFAULT_TYPE):
 # ────────────────────────────────────────────────
 app = Flask(__name__)
 
-# Global application and dispatcher (set in main)
 application = None
-dispatcher = None
 
 @app.route(f'/{BOT_TOKEN}', methods=['POST'])
 def webhook():
@@ -1257,7 +1252,7 @@ def webhook():
         if json_data:
             update = Update.de_json(json_data, application.bot)
             if update:
-                asyncio.create_task(dispatcher.process_update(update))
+                asyncio.create_task(application.process_update(update))
         return jsonify(success=True), 200
     return jsonify(success=False), 400
 
@@ -1274,13 +1269,12 @@ def run_flask():
     app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False, threaded=True)
 
 async def main():
-    global application, dispatcher
+    global application
 
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
     application = Application.builder().token(BOT_TOKEN).build()
-    dispatcher = application.dispatcher
 
     conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
